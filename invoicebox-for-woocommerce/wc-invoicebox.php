@@ -3,7 +3,7 @@
 /*
   Plugin Name: InvoiceBox Payment Gateway
   Description: Allows you to use InvoiceBox payment gateway with the WooCommerce plugin.
-  Version: 0.11
+  Version: 0.12
   Author: USC LLC
   Author URI: https://www.invoicebox.ru
 */
@@ -352,6 +352,16 @@ function woocommerce_invoicebox()
 				}; //if
 			}; //foreach
 
+
+			if ( $order->shipping_total > 0 )
+			{
+				$i++;
+				$args = array_merge($args, array("itransfer_item".$i."_name" => "Доставка"));
+				$args = array_merge($args, array("itransfer_item".$i."_quantity" => "1"));
+				$args = array_merge($args, array("itransfer_item".$i."_measure" => 'шт.'));
+				$args = array_merge($args, array("itransfer_item".$i."_price" => $order->shipping_total));
+				$args = array_merge($args, array("itransfer_item".$i."_vatrate" => 0));
+			}; //
 
 			$args_array = array();
 			foreach ($args as $key => $value)

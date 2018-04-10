@@ -334,7 +334,7 @@ function woocommerce_invoicebox()
 				$args = array_merge($args, array("itransfer_item".$i."_name" => $item["name"]));
 				$args = array_merge($args, array("itransfer_item".$i."_quantity" => $item["quantity"]));
 				$args = array_merge($args, array("itransfer_item".$i."_measure" => 'шт.'));
-				$args = array_merge($args, array("itransfer_item".$i."_price" => $item["total"]));
+				$args = array_merge($args, array("itransfer_item".$i."_price" => $item["total"]/$item["quantity"]));
 
 				if ( isset( $item["line_tax"] ) )
 				{
@@ -353,13 +353,13 @@ function woocommerce_invoicebox()
 			}; //foreach
 
 
-			if ( $order->shipping_total > 0 )
+			if ( $order->get_total_shipping() > 0 )
 			{
 				$i++;
 				$args = array_merge($args, array("itransfer_item".$i."_name" => "Доставка"));
 				$args = array_merge($args, array("itransfer_item".$i."_quantity" => "1"));
 				$args = array_merge($args, array("itransfer_item".$i."_measure" => 'шт.'));
-				$args = array_merge($args, array("itransfer_item".$i."_price" => $order->shipping_total));
+				$args = array_merge($args, array("itransfer_item".$i."_price" => $order->get_total_shipping()));
 				$args = array_merge($args, array("itransfer_item".$i."_vatrate" => 0));
 			}; //
 
@@ -408,7 +408,10 @@ function woocommerce_invoicebox()
 		function check_invoicebox_notify()
 		{
 			global $woocommerce;
-        
+        if(isset( $_GET['participantId'] )){
+					$_POST =$_GET;
+				}
+				
 			if ( isset( $_POST['participantId'] ) || isset( $_GET['participantId'] ) )
 			{
 				@ob_clean();

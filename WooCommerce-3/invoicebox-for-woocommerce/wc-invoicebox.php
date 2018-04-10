@@ -2,9 +2,9 @@
 
 /*
   Plugin Name: InvoiceBox Payment Gateway
-  Description: Allows you to use InvoiceBox payment gateway with the WooCommerce plugin.
-  Version: 0.11
-  Author: USC LLC
+  Description: Allows you to use InvoiceBox payment gateway with the WooCommerce 3 plugin.
+  Version: 1.0.0
+  Author: Invoicebox
   Author URI: https://www.invoicebox.ru
 */
 

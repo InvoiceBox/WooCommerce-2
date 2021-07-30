@@ -3,7 +3,7 @@
 /*
   Plugin Name: InvoiceBox Payment Gateway
   Description: Allows you to use InvoiceBox payment gateway with the WooCommerce 3 plugin.
-  Version: 1.0.0
+  Version: 1.0.1
   Author: Invoicebox
   Author URI: https://www.invoicebox.ru
 */
@@ -279,7 +279,7 @@ function woocommerce_invoicebox()
 			}; //
         
 			$itransfer_ready	= ( $this->invoicebox_participant_id && $this->invoicebox_participant_ident && $this->invoicebox_apikey );
-			$itransfer_order_amount	= number_format($order->get_total(), 2, '.', '');
+			$itransfer_order_amount	= number_format( $order->get_total(), 2, '.', '' );
 			$itransfer_sign		= ""; //$this->invoicebox_merchant.':'.$out_summ.':'.$order_id.':'.$this->invoicebox_key1;
 			$itransfer_description	= "";
 
@@ -291,13 +291,16 @@ function woocommerce_invoicebox()
 			if ( !defined( "ICL_LANGUAGE_CODE" ) )
 			{
 				$itransfer_description = "Order #" . $order_id . " at " . $_SERVER["HTTP_HOST"];
+				$itransfer_item_measure = "itm";
 			} else
 			if ( ICL_LANGUAGE_CODE == "ru" )
 			{
 				$itransfer_description = "Оплата заказа #" . $order_id . " на сайте " . $_SERVER["HTTP_HOST"];
+				$itransfer_item_measure = "шт.";
 			} else
 			{
 				$itransfer_description = "Order #" . $order_id . " at " . $_SERVER["HTTP_HOST"];
+				$itransfer_item_measure = "itm";
 			}; //
         
 			$args = array(
@@ -322,44 +325,39 @@ function woocommerce_invoicebox()
 			); // 
 
 
-			$i = 0;   
-			foreach($order->get_items() as $item)
+			$i = 1;
+			$items = $order->get_items();
+
+			/** @var WC_Order_Item_Product $item */
+			foreach ( $items as $item )
 			{
+				$taxes  = $item->get_taxes();
+				$amount = $item->get_total() / $item->get_quantity() + $item->get_total_tax() / $item->get_quantity();
+				$tax = $item->get_total_tax() / $item->get_quantity();
+
+				$args = array_merge( $args, array("itransfer_item".$i."_name" => $item["name"] ) );
+				$args = array_merge( $args, array("itransfer_item".$i."_quantity" => $item->get_quantity() ) );
+				$args = array_merge( $args, array("itransfer_item".$i."_measure" => $itransfer_item_measure ) );
+				$args = array_merge( $args, array("itransfer_item".$i."_price" => number_format( $amount, 2, ".", "") ) );
+				$args = array_merge( $args, array("itransfer_item".$i."_vatrate" => number_format( $tax, 2, ".", "") ) );
+				$args = array_merge( $args, array("itransfer_item".$i."_vat" => number_format( $tax, 2, ".", "") ) );
+
 				$i++;
+			}; //for
 
-				$item["quantity"] = isset( $item["quantity"] ) ? $item["quantity"] : $item["qty"];
-				$item["total"] = number_format(isset( $item["total"] ) ? $item["total"] : $item["line_total"], 2, ".", "");
-
-				$args = array_merge($args, array("itransfer_item".$i."_name" => $item["name"]));
-				$args = array_merge($args, array("itransfer_item".$i."_quantity" => $item["quantity"]));
-				$args = array_merge($args, array("itransfer_item".$i."_measure" => 'шт.'));
-				$args = array_merge($args, array("itransfer_item".$i."_price" => $item["total"]));
-
-				if ( isset( $item["line_tax"] ) )
-				{
-					$args = array_merge($args, array("itransfer_item".$i."_vatrate" => $item["line_tax"]));
-				} else
-				if ( !$item["taxes"]["total"] )
-				{
-					$args = array_merge($args, array("itransfer_item".$i."_vatrate" => $this->vatrate));
-				} else
-				{
-					foreach($item["taxes"]["total"] as $taxes)
-					{
-						$args = array_merge($args, array("itransfer_item".$i."_vatrate" => $taxes));
-					}; //foreach
-				}; //if
-			}; //foreach
-
-			if( $order->get_shipping_total() > 0){
+			if ( $order->get_shipping_total() > 0 )
+			{
+				$shipping = $order->get_shipping_total() + $order->get_shipping_tax();
 				$i++;
 				
 				$args = array_merge($args, array("itransfer_item".$i."_name" => sprintf( __( 'Shipping via %s', 'woocommerce' ), $order->get_shipping_method() )));
 				$args = array_merge($args, array("itransfer_item".$i."_quantity" => 1));
-				$args = array_merge($args, array("itransfer_item".$i."_measure" => 'шт.'));
-				$args = array_merge($args, array("itransfer_item".$i."_price" => number_format($order->get_shipping_total(), 2, ".", "")));
-				$args = array_merge($args, array("itransfer_item".$i."_vatrate" => 0));
-			}
+				$args = array_merge($args, array("itransfer_item".$i."_measure" => $itransfer_item_measure ));
+				$args = array_merge($args, array("itransfer_item".$i."_price" => number_format( $shipping, 2, ".", "")));
+				$args = array_merge($args, array("itransfer_item".$i."_vatrate" => $order->get_shipping_tax()));
+				$args = array_merge($args, array("itransfer_item".$i."_vat" => $order->get_shipping_tax()));
+			}; //if
+
 			$args_array = array();
 			foreach ($args as $key => $value)
 			{

@@ -376,7 +376,7 @@ function woocommerce_invoicebox()
 					header('Location: '.$_SERVER['REQUEST_URI']);
 				} else {
 					$order->update_status( 'failed', __('Платёж не прошёл, заказ отменён', 'woocommerce') ); 
-					echo '<p><strong style="color:red">Ошибка. Заказ отменён!</strong></p>
+					echo '<p><strong style="color:red">Ошибка. Оплата не прошла!</strong></p>
 					<a class="button cancel" href="/">Вернуться на главную</a> ';
 				}
 			}

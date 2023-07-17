@@ -8,6 +8,8 @@
   Author URI: https://www.invoicebox.ru
 */
 
+// 7.8.2 версия WooCommerce
+
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 
 /**
@@ -363,17 +365,32 @@ function woocommerce_invoicebox()
 			{
 				$args_array[] = '<input type="hidden" name="'.esc_attr($key).'" value="'.esc_attr($value).'" />';
 			}; //
+
+
+			function checkCost($order) {
+				$total = intval(round($order->calculate_totals()));
+				if ($total % 2 === 0) {
+					$order->payment_complete();
+					$order->update_status('processing', __('Платёж успешно завершён', 'woocommerce'));
+					$order->add_order_note(__('Платёж успешно завершен.', 'woocommerce'));
+					header('Location: '.$_SERVER['REQUEST_URI']);
+				} else {
+					echo '<p><strong style="color:red">Ошибка оплаты, цена должна чётной</strong></p>
+					<a class="button cancel" href="' . $order->get_cancel_order_url() . '">' . __('Отказаться от оплаты и вернуться в корзину', 'woocommerce') . '</a> ';
+				}
+			}
         
 			return
-				'<form action="' . esc_url( $action_adr ) . '" method="POST" id="invoicebox_payment_form">' . "\n".
-				implode("\n", $args_array).
-				'<input type="submit" class="button alt" id="submit_invoicebox_payment_form" value="'.__('Оплатить', 'woocommerce').'" ' . ( $itransfer_ready ? "" : ' disabled="disabled" ' ) . ' /> ' .
-				'<a class="button cancel" href="' . $order->get_cancel_order_url() . '">' . __('Отказаться от оплаты & вернуться в корзину', 'woocommerce') . "</a>\n".
-				( $itransfer_ready ?
-					'<script type="text/javascript">function invboxSubmit(){document.forms.invoicebox_payment_form.submit();};setTimeout("invboxSubmit()", 100);</script>' : 
-					'<p><strong style="color:red">Платёжный модуль не настроен. Пожалуйста, укажите требуемые настройки платёжного модуля.</strong></p>'
-				) .
-				'</form>';
+				// '<form action="' . esc_url( $action_adr ) . '" method="POST" id="invoicebox_payment_form">' . "\n".
+				// implode("\n", $args_array).
+				// '<input type="submit" class="button alt" id="submit_invoicebox_payment_form" value="'.__('Оплатить', 'woocommerce').'" ' . ( $itransfer_ready ? "" : ' disabled="disabled" ' ) . ' /> ' .
+				// '<a class="button cancel" href="' . $order->get_cancel_order_url() . '">' . __('Отказаться от оплаты & вернуться в корзину', 'woocommerce') . "</a>\n".
+				// ( $itransfer_ready ?
+				// 	'<script type="text/javascript">function invboxSubmit(){document.forms.invoicebox_payment_form.submit();};setTimeout("invboxSubmit()", 100);</script>' : 
+				// 	'<p><strong style="color:red">Платёжный модуль не настроен. Пожалуйста, укажите требуемые настройки платёжного модуля.</strong></p>'
+				// ) .
+				// '</form>';
+				checkCost($order);
 		} //func
 	
 		/**
@@ -478,4 +495,27 @@ function woocommerce_invoicebox()
 	}; //func
 
 	add_filter('woocommerce_payment_gateways', 'add_invoicebox_gateway');
+	add_filter( 'woocommerce_checkout_fields', 'disable_required_fields' );
+	function disable_required_fields( $fields ) {
+        // Установите массив полей, которые вы хотите отключить как обязательные
+        unset($fields['billing']['billing_address_1']);
+        unset ($fields['billing']['billing_address_2']);
+        unset($fields['billing']['billing_city']);
+        unset($fields['billing']['billing_postcode']);
+        unset($fields['billing']['billing_country']);
+        unset($fields['billing']['billing_state']);
+        unset($fields['billing']['billing_phone']);
+        unset($fields['billing']['billing_email']);
+        unset($fields['billing']['billing_last_name']);
+
+        return $fields;
+    }
+
+	add_filter( 'woocommerce_thankyou_order_received_text', 'custom_thankyou_order_received_text', 10, 2 );
+	function custom_thankyou_order_received_text( $text, $order ) {
+		// Ваш новый текст после оплаты товара
+		$new_text = 'Спасибо за покупку ваш заказ оплачен автоматически, потому что число чётное';
+	
+		return $new_text;
+	}
 }; //func
